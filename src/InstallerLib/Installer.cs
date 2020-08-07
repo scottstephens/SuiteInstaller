@@ -110,9 +110,9 @@ namespace SuiteInstaller.InstallerLib
         public void Remove()
         {
             if (Directory.Exists(this.BinaryDestinationFolder))
-                Directory.Delete(this.BinaryDestinationFolder);
+                Directory.Delete(this.BinaryDestinationFolder, true);
             if (Directory.Exists(this.ShortcutDestinationFolder))
-                Directory.Delete(this.ShortcutDestinationFolder);
+                Directory.Delete(this.ShortcutDestinationFolder, true);
         }
 
         public void Install()
@@ -136,14 +136,8 @@ namespace SuiteInstaller.InstallerLib
         {
             var source_folder = Path.Combine(this.BinarySourceFolder, folder_name);
             var dest_folder = Path.Combine(this.BinaryDestinationFolder, folder_name);
-            
-            var source_binary = Path.Combine(source_folder, exe_name);
-            var dest_binary = Path.Combine(source_folder, exe_name);
-            var source_timestamp = File.GetLastWriteTimeUtc(source_binary);
-            var dest_timestamp = File.GetLastWriteTimeUtc(dest_binary);
 
-            if (source_timestamp > dest_timestamp)
-                FileUtils.CopyFolderRecursive(source_folder, dest_folder);
+            FileUtils.CopyFolderRecursive(source_folder, dest_folder);
         }
 
         public void UpdateAndStart(string[] args)
@@ -162,8 +156,21 @@ namespace SuiteInstaller.InstallerLib
 
         public void WaitForProcessToClose(int pid)
         {
-            var p = Process.GetProcessById(pid);
-            p.WaitForExit();
+            try
+            {
+                var p = Process.GetProcessById(pid);
+                p.WaitForExit();
+            } 
+            catch(ArgumentException)
+            {
+                // this is what happens if there's no 
+                // running process with the requested pid
+            }
+        }
+
+        private string getLoopBlocker(string folder)
+        {
+            return Path.Combine(this.BinaryDestinationFolder, folder, "loopblocker.txt");
         }
 
         public void CheckForUpdateAndRestartIfNecessary()
@@ -174,15 +181,31 @@ namespace SuiteInstaller.InstallerLib
 
             if (entry_assembly.Location.StartsWith(this.BinaryDestinationFolder))
             {
-                if (UpdateAvailable(folder, exe))
-                {
-                    var installer_path = Path.Combine(this.BinarySourceFolder, "Installer", "Installer.exe");
-                    var arguments = $"UpdateAndStart {folder} {exe} {Process.GetCurrentProcess().Id}";
-                    var p = new Process();
-                    p.StartInfo = new ProcessStartInfo(installer_path, arguments);
-                    p.Start();
-                    Environment.Exit(0);
-                }
+                this.CheckForUpdateAndClose(folder, exe);
+            }
+        }
+
+        public void CheckForUpdateAndClose(string folder, string exe)
+        {
+            var loop_blocker = this.getLoopBlocker(folder);
+            if (UpdateAvailable(folder, exe))
+            {
+                if (File.Exists(loop_blocker))
+                    throw new Exception("Found the loop blocker file.");
+                else
+                    File.WriteAllText(loop_blocker, "");
+
+                var installer_path = Path.Combine(this.BinarySourceFolder, "Installer", "Installer.exe");
+                var arguments = $"UpdateAndStart {folder} {exe} {Process.GetCurrentProcess().Id}";
+                var p = new Process();
+                p.StartInfo = new ProcessStartInfo(installer_path, arguments);
+                p.Start();
+                Environment.Exit(0);
+            }
+            else
+            {
+                if (File.Exists(loop_blocker))
+                    File.Delete(loop_blocker);
             }
         }
 

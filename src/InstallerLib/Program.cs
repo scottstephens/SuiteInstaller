@@ -28,6 +28,10 @@ namespace SuiteInstaller.InstallerLib
                 {
                     Installer.Default.UpdateAndStart(args);
                 }
+                else if (args[0] == "UpdateAndClose")
+                {
+                    Installer.Default.CheckForUpdateAndClose(args[1], args[2]);
+                }
                 else
                 {
 
