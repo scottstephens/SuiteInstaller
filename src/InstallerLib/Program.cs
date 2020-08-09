@@ -8,7 +8,6 @@ namespace SuiteInstaller.InstallerLib
     {
         public static void Main(string[] args)
         {
-
             try
             {
                 Installer.Default.FastNetworkCheck();
@@ -34,7 +33,9 @@ namespace SuiteInstaller.InstallerLib
                 }
                 else
                 {
-
+                    throw new Exception($"Invalid argument {args[0]}");
+                    //ShortcutTest.Run();
+                    //DeserializationTest.Run();
                 }
             } 
             catch (SourceNotFoundException e)

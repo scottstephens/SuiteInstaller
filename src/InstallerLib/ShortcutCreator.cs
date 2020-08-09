@@ -24,6 +24,8 @@ namespace SuiteInstaller.InstallerLib
 
             wsh_shortcut.TargetPath = shortcut.TargetPath;
 
+            if (shortcut.Arguments != null)
+                wsh_shortcut.Arguments = shortcut.Arguments;
             if (shortcut.Description != null)
                 wsh_shortcut.Description = shortcut.Description;
             if (shortcut.Hotkey != null)
@@ -42,9 +44,17 @@ namespace SuiteInstaller.InstallerLib
         {
             WshShell shell = new WshShell();
             var wsh_shortcut = (IWshShortcut)shell.CreateShortcut(shortcut_location);
+
             var output = new Shortcut();
-            //output.
-            return null;
+            output.Arguments = wsh_shortcut.Arguments;
+            output.Description = wsh_shortcut.Description;
+            output.Hotkey = wsh_shortcut.Hotkey;
+            output.IconLocation = wsh_shortcut.IconLocation;
+            output.TargetPath = wsh_shortcut.TargetPath;
+            output.WindowStyle = (ShortcutWindowStyle)wsh_shortcut.WindowStyle;
+            output.WorkingDirectory = wsh_shortcut.WorkingDirectory;
+
+            return output;
         }
     }
 

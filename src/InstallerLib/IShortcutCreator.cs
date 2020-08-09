@@ -26,5 +26,15 @@ namespace SuiteInstaller.InstallerLib
         public string TargetPath { get; set; }
         public ShortcutWindowStyle? WindowStyle { get; set; }
         public string WorkingDirectory { get; set; }
+
+        public Shortcut()
+        {
+            this.Arguments = "";
+            this.Description = "";
+            this.Hotkey = "";
+            this.IconLocation = ",0";
+            this.WindowStyle = ShortcutWindowStyle.NormalWindow;
+            this.WorkingDirectory = "";
+        }
     }
 }
