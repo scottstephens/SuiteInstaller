@@ -214,7 +214,10 @@ namespace SuiteInstaller.InstallerLib
         private Shortcut BuildShortcut(App app)
         {
             var shortcut = new Shortcut();
-            shortcut.TargetPath = Path.Combine(this.Config.BinarySource, app.Folder, app.Exe);
+            if (app.CopyLocal)
+                shortcut.TargetPath = Path.Combine(this.getInstallFolder(), app.Folder, app.Exe);
+            else
+                shortcut.TargetPath = Path.Combine(this.Config.BinarySource, app.Folder, app.Exe);
             shortcut.Arguments = app.Arguments ?? "";
 
             string icon_file = "";
