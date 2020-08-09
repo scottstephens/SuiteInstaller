@@ -16,7 +16,15 @@ namespace SuiteInstaller.InstallerLib
             {
                 string name = Path.GetFileName(file);
                 string dest = Path.Combine(destFolder, name);
-                File.Copy(file, dest, overwrite:true);
+                if (!File.Exists(dest))
+                    File.Copy(file, dest);
+                else
+                {
+                    var source_ts = File.GetLastWriteTimeUtc(file);
+                    var dest_ts = File.GetLastWriteTimeUtc(dest);
+                    if (dest_ts != source_ts)
+                        File.Copy(file, dest, overwrite: true);
+                }
             }
             string[] folders = Directory.GetDirectories(sourceFolder);
             foreach (string folder in folders)
@@ -24,6 +32,27 @@ namespace SuiteInstaller.InstallerLib
                 string name = Path.GetFileName(folder);
                 string dest = Path.Combine(destFolder, name);
                 CopyFolderRecursive(folder, dest);
+            }
+        }
+
+        public static void SyncFolder(string sourceFolder, string destFolder)
+        {
+            if (!Directory.Exists(destFolder))
+                Directory.CreateDirectory(destFolder);
+            string[] files = Directory.GetFiles(sourceFolder);
+            foreach (string file in files)
+            {
+                string name = Path.GetFileName(file);
+                var dest = Path.Combine(destFolder, name);
+                if (!File.Exists(dest))
+                    File.Copy(file, dest);
+                else
+                {
+                    var src_ts = File.GetLastWriteTime(file);
+                    var dest_ts = File.GetLastWriteTime(dest);
+                    if (dest_ts < src_ts)
+                        File.Copy(file, dest, overwrite: true);
+                }
             }
         }
 
