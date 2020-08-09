@@ -276,8 +276,8 @@ namespace SuiteInstaller.InstallerLib
         public void Install()
         {
             this.UpdateIcons();
-            this.UpdateShortcuts();
             this.InstallAllApps();
+            this.UpdateShortcuts();
         }
 
         public bool UpdateAvailable(string folder_name, string exe_name)
