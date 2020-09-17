@@ -235,6 +235,11 @@ namespace SuiteInstaller.InstallerLib
             return EnvironmentVariableSubFolder("LOCALAPPDATA", this.Config.LocalAppDataFolder, "Apps");
         }
 
+        public string getSettingsFolder()
+        {
+            return EnvironmentVariableSubFolder("LOCALAPPDATA", this.Config.LocalAppDataFolder, "settings");
+        }
+
         public void InstallAllApps()
         {
             var expected_apps = this.Config.Apps
@@ -342,6 +347,13 @@ namespace SuiteInstaller.InstallerLib
             {
                 this.CheckForUpdateAndClose(folder, exe);
             }
+        }
+
+        public bool DeployedVersionIsRunning()
+        {
+            var entry_assembly = Assembly.GetEntryAssembly();
+            var install_folder = this.getInstallFolder();
+            return entry_assembly.Location.StartsWith(install_folder);
         }
 
         public void CheckForUpdateAndClose(string folder, string exe)
