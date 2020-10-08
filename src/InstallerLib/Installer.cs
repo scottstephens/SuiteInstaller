@@ -1,21 +1,40 @@
-﻿using Newtonsoft.Json;
+﻿using log4net;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SuiteInstaller.InstallerLib
 {
     public class Installer
     {
-        private Config Config;
+        private static readonly ILog log = LogManager.GetLogger(typeof(Installer));
+
+        private string ConfigFilePath;
+
+        private Config _config;
+
+        private Config Config
+        {
+            get
+            {
+                if (_config == null)
+                {
+                    this.FastNetworkCheck();
+                    _config = ParseConfig(this.ConfigFilePath);
+                }
+                return _config;
+            }
+        }
 
         public Installer(string config_file)
         {
-            this.Config = ParseConfig(config_file);
+            this.ConfigFilePath = config_file;
         }
 
         private static Config ParseConfig(string path)
@@ -44,28 +63,40 @@ namespace SuiteInstaller.InstallerLib
             @"\\example.com\ProductionAppData\InHouseAppDeployment\ExampleCoApps.json"
         );
 
+        internal static void InitializeLog4Net()
+        {
+            GlobalContext.Properties["LogFolder"] = Installer.Default.getLogFolder();
+            var log_config_path = Path.Combine(Default.Config.BinarySource, "Installer", "log4net.xml");
+            var log_repository = LogManager.GetRepository(Assembly.GetEntryAssembly());
+            log4net.Config.XmlConfigurator.Configure(log_repository, new FileInfo(log_config_path));
+        }
+
         public void FastNetworkCheck()
         {
-            var icon_task = Task.Run(this.CheckIconSource);
-            var binary_task = Task.Run(this.CheckBinarySource);
-            if (!Task.WaitAll(new[] { icon_task, binary_task }, TimeSpan.FromSeconds(5.0)))
-                throw new SourceNotFoundException(this.Config.IconSource);
-            else if (icon_task.Exception != null)
-                throw new SourceNotFoundException(this.Config.IconSource);
-            else if (binary_task.Exception != null)
-                throw new SourceNotFoundException(this.Config.BinarySource);
+            var check_task = Task.Run(this.CheckConfigFile);
+            if (!check_task.Wait(TimeSpan.FromSeconds(5.0)))
+            {
+                ThreadPool.QueueUserWorkItem(x => WaitAndSwallow((Task)x), check_task);
+                throw new SourceNotFoundException(this.ConfigFilePath);
+            }
         }
 
-        private void CheckIconSource()
+        private void WaitAndSwallow(Task t)
         {
-            if (!Directory.Exists(this.Config.IconSource))
-                throw new SourceNotFoundException(this.Config.IconSource);
+            try
+            {
+                t.Wait();
+            }
+            catch (Exception)
+            {
+
+            }
         }
 
-        private void CheckBinarySource()
+        private void CheckConfigFile()
         {
-            if (!Directory.Exists(this.Config.BinarySource))
-                throw new SourceNotFoundException(this.Config.BinarySource);
+            if (!File.Exists(this.ConfigFilePath))
+                throw new SourceNotFoundException(this.ConfigFilePath);
         }
 
         public void UpdateIcons()
@@ -152,6 +183,7 @@ namespace SuiteInstaller.InstallerLib
 
         public void UpdateShortcuts()
         {
+            log.Debug("UpdateShortcuts()");
             this.PurgeOutOfDateShortcuts();
             this.CreateMissingShortcuts();
         }
@@ -240,6 +272,11 @@ namespace SuiteInstaller.InstallerLib
             return EnvironmentVariableSubFolder("LOCALAPPDATA", this.Config.LocalAppDataFolder, "settings");
         }
 
+        public string getLogFolder()
+        {
+            return EnvironmentVariableSubFolder("LOCALAPPDATA", this.Config.LocalAppDataFolder, "Logs");
+        }
+
         public void InstallAllApps()
         {
             var expected_apps = this.Config.Apps
@@ -254,7 +291,7 @@ namespace SuiteInstaller.InstallerLib
                 {
                     var folder = FileUtils.GetLeafFolder(bin_folder);
                     if (!expected_apps.ContainsKey(folder))
-                        Directory.Delete(bin_folder);
+                        Directory.Delete(bin_folder, true);
                 }
             }
             foreach (var expected_app in expected_apps.Values)
@@ -270,6 +307,7 @@ namespace SuiteInstaller.InstallerLib
 
         public void Remove()
         {
+            log.Info("Remove()");
             if (Directory.Exists(this.getInstallFolder()))
                 Directory.Delete(this.getInstallFolder(), true);
             if (Directory.Exists(this.getLocalIconFolder()))
@@ -280,6 +318,7 @@ namespace SuiteInstaller.InstallerLib
 
         public void Install()
         {
+            log.Info("Install");
             this.UpdateIcons();
             this.InstallAllApps();
             this.UpdateShortcuts();
@@ -306,6 +345,7 @@ namespace SuiteInstaller.InstallerLib
 
         public void UpdateAndStart(string[] args)
         {
+            log.InfoFormat("UpdateAndStart({0})", new StringArrayFormatter(args));
             var folder = args[1];
             var exe = args[2];
             if (args.Length > 3)
@@ -314,8 +354,25 @@ namespace SuiteInstaller.InstallerLib
                 this.WaitForProcessToClose(pid);
             }
 
+            while (this.IsRunningProcess(folder, exe))
+            {
+                Console.WriteLine();
+                Console.WriteLine("The program being updated is currently running.");
+                Console.WriteLine("Close the program and then press enter.");
+                Console.WriteLine("If you wish to keep the other program running, you may type cancel and then press enter;");
+                Console.WriteLine("this will stop the upgrade process.");
+                var input = Console.ReadLine();
+
+                if (input.ToLowerInvariant() == "cancel")
+                {
+                    File.Delete(this.getLoopBlocker(folder));
+                    return;
+                }
+            }
+
             this.UpdateSingle(folder, exe);
             this.Launch(folder, exe);
+
         }
 
         public void WaitForProcessToClose(int pid)
@@ -332,6 +389,42 @@ namespace SuiteInstaller.InstallerLib
             }
         }
 
+        public bool IsRunningProcess(string folder, string exe)
+        {
+            var target_exe = Path.Combine(this.getInstallFolder(), folder, exe);
+            var candidates = Process.GetProcesses();
+            var all = new List<string>();
+            foreach (var candidate in candidates)
+            {
+                bool has_exited;
+                ProcessModule main_module;
+                try
+                {
+                    has_exited = candidate.HasExited;
+                }
+                catch
+                {
+                    continue;
+                }
+                try
+                {
+                    main_module = candidate.MainModule;
+                }
+                catch
+                {
+                    continue;
+                }
+
+                all.Add(main_module.FileName);
+
+                if (!has_exited && main_module.FileName == target_exe)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         private string getLoopBlocker(string folder)
         {
             return Path.Combine(this.getInstallFolder(), folder, "loopblocker.txt");
@@ -339,25 +432,52 @@ namespace SuiteInstaller.InstallerLib
 
         public void CheckForUpdateAndRestartIfNecessary()
         {
-            var entry_assembly = Assembly.GetEntryAssembly();
-            var folder = FileUtils.GetLeafFolder(Path.GetDirectoryName(entry_assembly.Location));
-            var exe = Path.GetFileName(entry_assembly.Location);
+            var info = this.getCurrentProcessInfo();
 
-            if (entry_assembly.Location.StartsWith(this.getInstallFolder()))
+            if (info.IsDeployed)
             {
-                this.CheckForUpdateAndClose(folder, exe);
+                this.CheckForUpdateAndClose(info.Folder, info.Exe);
             }
+        }
+
+        public class CurrentProcessInfo
+        {
+            public string PenultimateFolderPath;
+            public string Folder;
+            public string Exe;
+            public bool IsDeployed;
+        }
+
+        public CurrentProcessInfo getCurrentProcessInfo()
+        {
+            var exe_path = Process.GetCurrentProcess().MainModule.FileName;
+            var exe = Path.GetFileName(exe_path);
+
+            var folder_path = Path.GetDirectoryName(exe_path);
+
+            var pen_folder_path = Path.GetDirectoryName(folder_path);
+            var folder = FileUtils.GetLeafFolder(folder_path);
+
+            var install_folder = this.getInstallFolder();
+
+            return new CurrentProcessInfo()
+            {
+                Exe = exe,
+                Folder = folder,
+                PenultimateFolderPath = pen_folder_path,
+                IsDeployed = pen_folder_path.Equals(this.getInstallFolder()),
+            };
         }
 
         public bool DeployedVersionIsRunning()
         {
-            var entry_assembly = Assembly.GetEntryAssembly();
-            var install_folder = this.getInstallFolder();
-            return entry_assembly.Location.StartsWith(install_folder);
+            var info = this.getCurrentProcessInfo();
+            return info.IsDeployed;
         }
 
         public void CheckForUpdateAndClose(string folder, string exe)
         {
+            log.InfoFormat("CheckForUpdateAndClose({0},{1})", folder, exe);
             var loop_blocker = this.getLoopBlocker(folder);
             if (UpdateAvailable(folder, exe))
             {
@@ -382,6 +502,7 @@ namespace SuiteInstaller.InstallerLib
 
         public void Launch(string folder_name, string exe_name)
         {
+            log.InfoFormat("Launch({0},{1})", folder_name, exe_name);
             var p = new Process();
             var app_path = Path.Combine(this.getInstallFolder(), folder_name, exe_name);
             p.StartInfo = new ProcessStartInfo(app_path);

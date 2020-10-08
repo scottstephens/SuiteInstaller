@@ -1,13 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using log4net;
 
 namespace SuiteInstaller.InstallerLib
 {
     public class Program
     {
+        private static readonly ILog log = LogManager.GetLogger(typeof(Program));
+
         public static void Main(string[] args)
         {
+            log.DebugFormat("Main({0})", new StringArrayFormatter(args));
             try
             {
                 Installer.Default.FastNetworkCheck();
@@ -40,6 +44,7 @@ namespace SuiteInstaller.InstallerLib
             } 
             catch (SourceNotFoundException e)
             {
+                log.Error("Error finding source folder", e);
                 Console.WriteLine($"Error finding source folder {e.SourceFolder}");
                 Console.WriteLine();
                 Console.WriteLine("This is most likely because the program can't find a necessary network share.");
@@ -54,6 +59,7 @@ namespace SuiteInstaller.InstallerLib
             }
             catch (Exception e)
             {
+                log.Error("Unexpected error", e);
                 Console.WriteLine($"Unexpected error. Show Scott.");
                 Console.WriteLine();
                 Console.WriteLine($"{e.GetType().Name}: {e.Message}");
