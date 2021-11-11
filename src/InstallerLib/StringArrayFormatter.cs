@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace ScottStephens.SuiteInstaller.InstallerLib
+namespace SuiteInstaller.InstallerLib
 {
     public class StringArrayFormatter
     {
