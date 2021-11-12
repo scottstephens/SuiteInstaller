@@ -10,7 +10,6 @@ namespace SuiteInstaller.Installer
     {
         static void Main(string[] args)
         {
-            SuiteInstaller.InstallerLib.Installer.InitializeLog4Net();
             SuiteInstaller.InstallerLib.Program.Main(args);
         }
     }

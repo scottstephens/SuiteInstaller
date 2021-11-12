@@ -1,5 +1,6 @@
 ﻿using log4net;
 using Newtonsoft.Json;
+using ScottStephens.SuiteInstaller.InstallerLib.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -59,14 +60,10 @@ namespace SuiteInstaller.InstallerLib
             return result;
         }
 
-        public static readonly Installer Default = new Installer(
-            @"\\example.com\ProductionAppData\InHouseAppDeployment\ExampleCoApps.json"
-        );
-
-        internal static void InitializeLog4Net()
+        internal void InitializeLog4Net()
         {
-            GlobalContext.Properties["LogFolder"] = Installer.Default.getLogFolder();
-            var log_config_path = Path.Combine(Default.Config.BinarySource, "Installer", "log4net.xml");
+            GlobalContext.Properties["LogFolder"] = this.getLogFolder();
+            var log_config_path = Path.Combine(this.Config.BinarySource, "Installer", "log4net.xml");
             var log_repository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             log4net.Config.XmlConfigurator.Configure(log_repository, new FileInfo(log_config_path));
         }
