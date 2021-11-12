@@ -2,4 +2,7 @@ Visual Studio
 .vs/
 [Bb]in/
 [Oo]bj/
+[Pp]ub/
+*.csproj.user
+*.pubxml.user
 
