@@ -1,6 +1,6 @@
 ﻿using log4net;
 using Newtonsoft.Json;
-using ScottStephens.SuiteInstaller.InstallerLib.Utilities;
+using SuiteInstaller.InstallerLib.Utilities;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

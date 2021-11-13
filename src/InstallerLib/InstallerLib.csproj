@@ -5,6 +5,22 @@
     <RootNamespace>SuiteInstaller.InstallerLib</RootNamespace>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <PackageId>SuiteInstaller.InstallerLib</PackageId>
+	<CurrentYear>$([System.DateTime]::Now.ToString(yyyy))</CurrentYear>
+	<CurrentMonthDay>$([System.DateTime]::Now.ToString(MMdd))</CurrentMonthDay>
+	<VersionPrefix>1.0.$(CurrentYear).$(CurrentMonthDay)</VersionPrefix>
+    <Title>SuiteInstaller - InstallerLib</Title>
+    <Description>Library for installation and automatic updates of a suite of Windows programs.</Description>
+    <Readme>README.md</Readme>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="pub\**" />
+    <EmbeddedResource Remove="pub\**" />
+    <None Remove="pub\**" />
+  </ItemGroup>
+
   <ItemGroup>
     <PackageReference Include="log4net" Version="2.*" />
     <PackageReference Include="Newtonsoft.Json" Version="13.*" />
