@@ -15,10 +15,11 @@ namespace SuiteInstaller.InstallerLib
     public class Installer
     {
         private static readonly ILog log = LogManager.GetLogger(typeof(Installer));
+        private const string ConfigPathFileName = "SuiteInstallerConfigPath.txt";
 
         private string ConfigFilePath;
-
         private Config _config;
+        private string ConfigFileFolder;
 
         private Config Config
         {
@@ -36,6 +37,27 @@ namespace SuiteInstaller.InstallerLib
         public Installer(string config_file)
         {
             this.ConfigFilePath = config_file;
+            this.ConfigFileFolder = Path.GetDirectoryName(ConfigFilePath);
+        }
+
+        public string getBinaryFolder()
+        {
+            return Path.Combine(ConfigFileFolder, "Binaries");
+        }
+
+        public string getIconFolder()
+        {
+            return Path.Combine(ConfigFileFolder, "Icons");
+        }
+
+        public string getInstallerFolder()
+        {
+            return Path.Combine(ConfigFileFolder, "SuiteInstaller");
+        }
+
+        public string getInstallerPath()
+        {
+            return Path.Combine(getInstallerFolder(), "Installer.exe");
         }
 
         private static Config ParseConfig(string path)
@@ -63,7 +85,7 @@ namespace SuiteInstaller.InstallerLib
         internal void InitializeLog4Net()
         {
             GlobalContext.Properties["LogFolder"] = this.getLogFolder();
-            var log_config_path = Path.Combine(this.Config.BinarySource, "Installer", "log4net.xml");
+            var log_config_path = Path.Combine(getInstallerFolder(), "log4net.xml");
             var log_repository = LogManager.GetRepository(Assembly.GetEntryAssembly());
             log4net.Config.XmlConfigurator.Configure(log_repository, new FileInfo(log_config_path));
         }
@@ -154,7 +176,7 @@ namespace SuiteInstaller.InstallerLib
             {
                 var name = IconNameFromShortcutIconSpec(n.IconFile);
                 var local_path = Path.Combine(local_icon_path, name);
-                var source_path = Path.Combine(this.Config.IconSource, name);
+                var source_path = Path.Combine(getIconFolder(), name);
                 if (existing.ContainsKey(name))
                 {
                     var local_ts = File.GetLastWriteTimeUtc(local_path);
@@ -246,7 +268,7 @@ namespace SuiteInstaller.InstallerLib
             if (app.CopyLocal)
                 shortcut.TargetPath = Path.Combine(this.getInstallFolder(), app.Folder, app.Exe);
             else
-                shortcut.TargetPath = Path.Combine(this.Config.BinarySource, app.Folder, app.Exe);
+                shortcut.TargetPath = Path.Combine(this.getBinaryFolder(), app.Folder, app.Exe);
             shortcut.Arguments = app.Arguments ?? "";
 
             string icon_file = "";
@@ -266,7 +288,7 @@ namespace SuiteInstaller.InstallerLib
 
         public string getSettingsFolder()
         {
-            return EnvironmentVariableSubFolder("LOCALAPPDATA", this.Config.LocalAppDataFolder, "settings");
+            return EnvironmentVariableSubFolder("LOCALAPPDATA", this.Config.LocalAppDataFolder, "Settings");
         }
 
         public string getLogFolder()
@@ -294,10 +316,13 @@ namespace SuiteInstaller.InstallerLib
             foreach (var expected_app in expected_apps.Values)
             {
                 var folder = expected_app.Folder;
-                var source_folder = Path.Combine(this.Config.BinarySource, folder);
+                var source_folder = Path.Combine(this.getBinaryFolder(), folder);
                 var dest_folder = Path.Combine(install_folder, folder);
                 if (!Directory.Exists(dest_folder))
+                {
                     FileUtils.CopyFolderRecursive(source_folder, dest_folder);
+                    File.WriteAllText(Path.Combine(dest_folder, ConfigPathFileName), ConfigFilePath);
+                }
             }
         }
 
@@ -323,7 +348,7 @@ namespace SuiteInstaller.InstallerLib
 
         public bool UpdateAvailable(string folder_name, string exe_name)
         {
-            var binary_source = Path.Combine(this.Config.BinarySource, folder_name, exe_name);
+            var binary_source = Path.Combine(this.getBinaryFolder(), folder_name, exe_name);
             var binary_dest = Path.Combine(this.getInstallFolder(), folder_name, exe_name);
 
             var source_timestamp = File.GetLastWriteTimeUtc(binary_source);
@@ -334,10 +359,11 @@ namespace SuiteInstaller.InstallerLib
 
         public void UpdateSingle(string folder_name, string exe_name)
         {
-            var source_folder = Path.Combine(this.Config.BinarySource, folder_name);
+            var source_folder = Path.Combine(this.getBinaryFolder(), folder_name);
             var dest_folder = Path.Combine(this.getInstallFolder(), folder_name);
 
             FileUtils.CopyFolderRecursive(source_folder, dest_folder);
+            File.WriteAllText(Path.Combine(dest_folder, ConfigPathFileName), ConfigFilePath);
         }
 
         public void UpdateAndStart(string[] args)
@@ -427,7 +453,7 @@ namespace SuiteInstaller.InstallerLib
             return Path.Combine(this.getInstallFolder(), folder, "loopblocker.txt");
         }
 
-        public void CheckForUpdateAndRestartIfNecessary()
+        private void CheckForUpdateAndRestartIfNecessaryImpl()
         {
             var info = this.getCurrentProcessInfo();
 
@@ -435,6 +461,15 @@ namespace SuiteInstaller.InstallerLib
             {
                 this.CheckForUpdateAndClose(info.Folder, info.Exe);
             }
+        }
+
+        public static void CheckForUpdateAndRestartIfNecessary()
+        {
+            var entryAssembly = Assembly.GetEntryAssembly().Location;
+            var entryAssemblyFolder = Path.GetDirectoryName(entryAssembly);
+            var configFilePath = File.ReadAllText(Path.Combine(entryAssemblyFolder, ConfigPathFileName));
+            var installer = new Installer(configFilePath);
+            installer.CheckForUpdateAndRestartIfNecessaryImpl();
         }
 
         public class CurrentProcessInfo
@@ -483,7 +518,7 @@ namespace SuiteInstaller.InstallerLib
                 else
                     File.WriteAllText(loop_blocker, "");
 
-                var installer_path = Path.Combine(this.Config.BinarySource, "Installer", "Installer.exe");
+                var installer_path = getInstallerPath();
                 var arguments = $"UpdateAndStart {folder} {exe} {Process.GetCurrentProcess().Id}";
                 var p = new Process();
                 p.StartInfo = new ProcessStartInfo(installer_path, arguments);

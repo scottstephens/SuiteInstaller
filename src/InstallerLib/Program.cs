@@ -93,7 +93,7 @@ namespace SuiteInstaller.InstallerLib
         {
             var entry_assembly_path = Assembly.GetEntryAssembly().Location;
             var entry_assembly_folder = Path.GetDirectoryName(entry_assembly_path);
-            var default_config_path = Path.Combine(entry_assembly_folder, "config.json");
+            var default_config_path = Path.Combine(entry_assembly_folder, "..", "SuiteInstallerConfig.json");
             return new Installer(default_config_path);
         }
     }

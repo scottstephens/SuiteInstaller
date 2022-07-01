@@ -6,8 +6,6 @@ namespace SuiteInstaller.InstallerLib
 {
     public class Config
     {
-        public string BinarySource { get; set; }
-        public string IconSource { get; set; }
         public string LocalAppDataFolder { get; set; }
         public string StartMenuFolder { get; set; }
         public List<App> Apps { get; set; }
