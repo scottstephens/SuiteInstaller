@@ -1,4 +1,4 @@
-﻿#if NETCOREAPP3_1
+﻿#if NETCOREAPP3_1_OR_GREATER
 using System;
 using System.Collections.Generic;
 using System.IO;
