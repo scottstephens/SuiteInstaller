@@ -1,4 +1,4 @@
-# ScottStephens.SuiteInstaller
+# SuiteInstaller
 
 Library for installation and automatic updates of a suite of Windows programs.
 
