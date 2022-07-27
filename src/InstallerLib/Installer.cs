@@ -9,6 +9,8 @@ using System.Linq;
 using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace SuiteInstaller.InstallerLib
 {
@@ -60,7 +62,33 @@ namespace SuiteInstaller.InstallerLib
             return Path.Combine(getInstallerFolder(), "Installer.exe");
         }
 
-        private static Config ParseConfig(string path)
+        internal static Config ParseConfig(string path)
+        {
+            var ext = Path.GetExtension(path);
+            switch (ext)
+            {
+                case ".json":
+                    return ParseConfigJson(path);
+                case ".yaml":
+                case ".yml":
+                    return ParseConfigYaml(path);
+                default:
+                    throw new ArgumentException("Config file must be in json or yaml format with correct extension.");
+            }
+        }
+
+        internal static Config ParseConfigYaml(string path)
+        {
+            var deserializer = new DeserializerBuilder()
+                .Build()
+            ;
+
+            using var reader = new StreamReader(path);
+            var config = deserializer.Deserialize<Config>(reader);
+            return config;
+        }
+
+        internal static Config ParseConfigJson(string path)
         {
             var config_text = File.ReadAllText(path);
             var escaped_config = config_text.Replace(@"\", @"\\");
@@ -68,14 +96,14 @@ namespace SuiteInstaller.InstallerLib
             return config;
         }
 
-        private static string EnvironmentVariableSubFolder(string environment_variable, string rel_path)
+        internal static string EnvironmentVariableSubFolder(string environment_variable, string rel_path)
         {
             var env_path = Environment.GetEnvironmentVariable(environment_variable);
             var result = Path.Combine(env_path, rel_path);
             return result;
         }
 
-        private static string EnvironmentVariableSubFolder(string environment_variable, string rel_path1, string rel_path2)
+        internal static string EnvironmentVariableSubFolder(string environment_variable, string rel_path1, string rel_path2)
         {
             var env_path = Environment.GetEnvironmentVariable(environment_variable);
             var result = Path.Combine(env_path, rel_path1, rel_path2);
@@ -467,9 +495,19 @@ namespace SuiteInstaller.InstallerLib
         {
             var entryAssembly = Assembly.GetEntryAssembly().Location;
             var entryAssemblyFolder = Path.GetDirectoryName(entryAssembly);
-            var configFilePath = File.ReadAllText(Path.Combine(entryAssemblyFolder, ConfigPathFileName));
-            var installer = new Installer(configFilePath);
-            installer.CheckForUpdateAndRestartIfNecessaryImpl();
+
+            var configPathFilePath = Path.Combine(entryAssemblyFolder, ConfigPathFileName);
+            if (!File.Exists(configPathFilePath))
+            {
+                log.WarnFormat("Did not find a file containing the path to the SuiteInstallerConfigFile at {0}", configPathFilePath);
+                return;
+            }
+            else
+            {
+                var configFilePath = File.ReadAllText(configPathFilePath);
+                var installer = new Installer(configFilePath);
+                installer.CheckForUpdateAndRestartIfNecessaryImpl();
+            }
         }
 
         public class CurrentProcessInfo

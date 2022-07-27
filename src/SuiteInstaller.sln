@@ -7,6 +7,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Installer", "Installer\Inst
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "InstallerLib", "InstallerLib\InstallerLib.csproj", "{5903A4C2-F62E-4225-8B77-FBE53AEF4987}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "InstallerLibTests", "InstallerLibTests\InstallerLibTests.csproj", "{4D667AD6-2EE6-48E6-B6F6-F86991E706B8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +23,10 @@ Global
 		{5903A4C2-F62E-4225-8B77-FBE53AEF4987}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{5903A4C2-F62E-4225-8B77-FBE53AEF4987}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{5903A4C2-F62E-4225-8B77-FBE53AEF4987}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4D667AD6-2EE6-48E6-B6F6-F86991E706B8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4D667AD6-2EE6-48E6-B6F6-F86991E706B8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4D667AD6-2EE6-48E6-B6F6-F86991E706B8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4D667AD6-2EE6-48E6-B6F6-F86991E706B8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -1,0 +1,25 @@
+﻿---
+LocalAppDataFolder: ExampleOrg
+StartMenuFolder: 0ExampleOrg
+Apps:
+  -
+    Name: Install
+    Folder: ..\SuiteInstaller
+    Exe: Installer.exe
+    Arguments: Install
+    CopyLocal: false
+    IconFile: install.ico
+  -
+    Name: Remove
+    Folder: ..\SuiteInstaller
+    Exe: Installer.exe
+    Arguments: Remove
+    CopyLocal: false
+    IconFile: bomb.ico
+  - 
+    Name: ExampleApp1
+    Folder: ExampleApp1
+    Exe: ExampleApp1.exe
+    Arguments: ""
+    CopyLocal: true
+

@@ -93,8 +93,17 @@ namespace SuiteInstaller.InstallerLib
         {
             var entry_assembly_path = Assembly.GetEntryAssembly().Location;
             var entry_assembly_folder = Path.GetDirectoryName(entry_assembly_path);
-            var default_config_path = Path.Combine(entry_assembly_folder, "..", "SuiteInstallerConfig.json");
-            return new Installer(default_config_path);
+            var default_folder = Path.Combine(entry_assembly_folder, "..");
+            var base_name = "SuiteInstallerConfig";
+            var json_path = Path.Combine(default_folder, $"{base_name}.json");
+            var yaml_path = Path.Combine(default_folder, $"{base_name}.yaml");
+
+            if (File.Exists(yaml_path))
+                return new Installer(yaml_path);
+            else if (File.Exists(json_path))
+                return new Installer(json_path);
+            else
+                throw new Exception("Could not find a config file in the default location. Specify it explicitly.");
         }
     }
 }
