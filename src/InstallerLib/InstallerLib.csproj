@@ -7,13 +7,12 @@
 
   <PropertyGroup>
     <PackageId>SuiteInstaller.InstallerLib</PackageId>
-    <CurrentYear>$([System.DateTime]::Now.ToString(yyyy))</CurrentYear>
-    <CurrentMonthDay>$([System.DateTime]::Now.ToString(MMdd))</CurrentMonthDay>
-    <VersionPrefix>1.0.$(CurrentYear).$(CurrentMonthDay)</VersionPrefix>
+    <VersionPrefix>1.0.0</VersionPrefix>
     <Title>SuiteInstaller - InstallerLib</Title>
     <Description>Library for installation and automatic updates of a suite of Windows programs.</Description>
     <Authors>Scott Stephens</Authors>
-    <Readme>README.md</Readme>
+    <PackageProjectUrl>https://github.com/scottstephens/SuiteInstaller</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
   </PropertyGroup>
 
     <ItemGroup>
@@ -21,9 +20,10 @@
     </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="pub\**" />
-    <EmbeddedResource Remove="pub\**" />
-    <None Remove="pub\**" />
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
   </ItemGroup>
 
   <ItemGroup>
