@@ -13,6 +13,7 @@
     <Authors>Scott Stephens</Authors>
     <PackageProjectUrl>https://github.com/scottstephens/SuiteInstaller</PackageProjectUrl>
     <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
     <ItemGroup>
